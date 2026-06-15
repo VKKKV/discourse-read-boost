@@ -1,8 +1,9 @@
 # LINUXDO ReadBoost
+[![GPLv3 License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 [LINUXDO ReadBoost](https://greasyfork.org/scripts/519843-linuxdo-readboost)，一款润物细无声的脚本，解放双手，自动化刷取 LINUXDO 论坛的已读帖数
 开源、温和，支持自定义参数，理论支持所有使用 Discourse 程序的论坛
-⚠️：使用第三方脚本，存在失效、封号等潜在的风险，作为一款完全开源的脚本，支持使用者自行审核，请勿将脚本用于商业用途，开发者不对造成的后果负责
+⚠️：使用第三方脚本，存在失效、封号等潜在的风险，作为一款完全开源的脚本，支持使用者自行审核，开发者不对造成的后果负责
 
 ## 如何使用
 
@@ -31,7 +32,11 @@
 
 ⚠️ 建议保持默认设置。如需提高速度，优先调大「每次请求阅读量」而非降低延迟，减少对服务器的影响。
 
-## 相比原版的改进 (v1.2)
+## 相比原版的改进 (v1.3)
+
+- **GPLv3 许可** — 从 MIT 切换至 GPLv3，使用更严格的 copyleft 保护
+
+### v1.2
 
 - **多论坛支持** — 使用 `location.origin` 动态获取 API 地址，新增 nodeloc.com / idcflare.com / meta.discourse.org 等 @match 规则
 - **停止按钮** — 运行中可随时点击「停止」中断
@@ -40,13 +45,15 @@
 - **DOM 就绪等待** — 等待 DOMContentLoaded 后再操作，避免 SPA 竞态
 - **后置延迟优化** — 最后一批请求后不再无谓等待
 - **GM_addStyle** — 注入的样式跟随论坛主题变量，不再硬编码
-- **元数据完善** — 添加 @license MIT、@icon、@updateURL/@downloadURL、@grant 声明
+- **元数据完善** — 添加 @icon、@updateURL/@downloadURL、@grant 声明
 
 ## 待解决
 
 - [ ] 回帖ID和回帖总数不完全对应时（存在删帖），帖子无法 100% 刷完
 - [ ] 支持从列表页批量刷多个帖子
 
-## 其他说明
+## 许可证
+
+[GNU General Public License v3.0](LICENSE) — 开源、copyleft，任何人可自由使用、修改和分发，但修改后的衍生作品必须同样以 GPLv3 发布。
 
 开发不易，如果你想基于这个脚本二次开发，或者参考了其中比较多数量的代码，请添加一个来源声明，感谢使用！

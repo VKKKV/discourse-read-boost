@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         LINUXDO ReadBoost
 // @namespace    linux.do_ReadBoost
-// @version      1.2
+// @version      1.3
 // @author       Do
 // @description  自动化刷取Discourse论坛已读帖量，温和、可配置、理论支持所有Discourse论坛
-// @license      MIT
+// @license      GPL-3.0
 // @icon         https://www.google.com/s2/favicons?domain=linux.do
 // @match        https://linux.do/t/topic/*
 // @match        https://nodeloc.com/t/topic/*
