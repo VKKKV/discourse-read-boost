@@ -16,8 +16,8 @@
 // @grant        GM_deleteValue
 // @grant        GM_listValues
 // @grant        GM_addStyle
-// @updateURL    https://raw.githubusercontent.com/VKKKV/LINUXDO_ReadBoost/main/LINUXDO_ReadBoost.js
-// @downloadURL  https://raw.githubusercontent.com/VKKKV/LINUXDO_ReadBoost/main/LINUXDO_ReadBoost.js
+// @updateURL    https://raw.githubusercontent.com/VKKKV/discourse-read-boost/main/LINUXDO_ReadBoost.js
+// @downloadURL  https://raw.githubusercontent.com/VKKKV/discourse-read-boost/main/LINUXDO_ReadBoost.js
 // ==/UserScript==
 
 (function () {
