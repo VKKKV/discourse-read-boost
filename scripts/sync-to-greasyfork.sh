@@ -79,9 +79,7 @@ esac
 if [ "$NEW_VERSION" != "$CURRENT_VERSION" ]; then
     echo ""
     echo "==> 更新版本号: v$CURRENT_VERSION → v$NEW_VERSION"
-    sed -i "s|// @version$TAB*$CURRENT_VERSION|// @version      $NEW_VERSION|" "$JS_FILE"
-    # Fallback: try with any whitespace
-    sed -i "s|//\s*@version\s*$CURRENT_VERSION\b|// @version      $NEW_VERSION|" "$JS_FILE"
+    sed -i -E "s|^//[[:space:]]*@version[[:space:]]+$CURRENT_VERSION$|// @version      $NEW_VERSION|" "$JS_FILE"
     echo "  JS 版本已更新"
 fi
 

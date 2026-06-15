@@ -1,16 +1,16 @@
 // ==UserScript==
-// @name         LINUXDO ReadBoost
-// @namespace    linux.do_ReadBoost
-// @version      1.3
+// @name         Discourse Read Boost
+// @namespace    discourse-read-boost
+// @version      1.4
 // @author       Do
-// @description  自动化刷取Discourse论坛已读帖量，温和、可配置、理论支持所有Discourse论坛
+// @description  自动化刷取 Discourse 论坛已读帖量，温和、可配置，支持多个 Discourse 论坛
 // @license      GPL-3.0
 // @icon         https://www.google.com/s2/favicons?domain=linux.do
-// @match        https://linux.do/t/topic/*
-// @match        https://nodeloc.com/t/topic/*
-// @match        https://idcflare.com/t/topic/*
-// @match        https://www.nodeloc.com/t/topic/*
-// @match        https://meta.discourse.org/t/topic/*
+// @match        https://linux.do/t/*
+// @match        https://nodeloc.com/t/*
+// @match        https://idcflare.com/t/*
+// @match        https://www.nodeloc.com/t/*
+// @match        https://meta.discourse.org/t/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -23,11 +23,13 @@
 (function () {
     'use strict'
 
+    const SCRIPT_NAME = 'Discourse Read Boost'
+
     // ── 风险确认（仅首次） ──────────────────────────────────────────────
     const hasAgreed = GM_getValue('hasAgreed', false)
     if (!hasAgreed) {
         const msg = [
-            '[ LINUXDO ReadBoost ]',
+            `[ ${SCRIPT_NAME} ]`,
             '检测到这是你第一次使用，使用前你必须知晓：',
             '使用该第三方脚本可能会导致包括但不限于账号被限制、被封禁的潜在风险。',
             '脚本不对出现的任何风险负责，这是一个开源脚本，你可以自由审核其中的内容。',
@@ -74,21 +76,25 @@
     let config = loadConfig()
     let isRunning = false
     let abortFlag = false
+    let currentTopicId = null
+    let currentTotalReplies = 0
 
     // ── 存储 ────────────────────────────────────────────────────────────
     function loadConfig() {
         const stored = {}
-        CONFIG_META.forEach(({ key }) => {
+        CONFIG_META.forEach(({ key, min, max }) => {
             const val = GM_getValue(key, DEFAULT_CONFIG[key])
-            stored[key] = typeof val === 'number' ? val : DEFAULT_CONFIG[key]
+            stored[key] = clampInt(val, DEFAULT_CONFIG[key], min, max)
         })
-        stored.autoStart = GM_getValue('autoStart', DEFAULT_CONFIG.autoStart)
-        return { ...DEFAULT_CONFIG, ...stored }
+        stored.autoStart = toBoolean(GM_getValue('autoStart', DEFAULT_CONFIG.autoStart), DEFAULT_CONFIG.autoStart)
+        return normalizeConfig({ ...DEFAULT_CONFIG, ...stored })
     }
 
     function saveConfig(cfg) {
-        CONFIG_META.forEach(({ key }) => GM_setValue(key, clampInt(cfg[key], DEFAULT_CONFIG[key], 1, 99999)))
-        GM_setValue('autoStart', Boolean(cfg.autoStart))
+        const normalized = normalizeConfig(cfg)
+        CONFIG_META.forEach(({ key }) => GM_setValue(key, normalized[key]))
+        GM_setValue('autoStart', normalized.autoStart)
+        return normalized
     }
 
     function resetConfig() {
@@ -102,12 +108,71 @@
         return Math.max(min, Math.min(max, n))
     }
 
+    function normalizeConfig(cfg) {
+        const normalized = { ...DEFAULT_CONFIG }
+        CONFIG_META.forEach(({ key, min, max }) => {
+            normalized[key] = clampInt(cfg[key], DEFAULT_CONFIG[key], min, max)
+        })
+        if (normalized.minReqSize > normalized.maxReqSize) {
+            normalized.maxReqSize = normalized.minReqSize
+        }
+        if (normalized.minReadTime > normalized.maxReadTime) {
+            normalized.maxReadTime = normalized.minReadTime
+        }
+        normalized.autoStart = toBoolean(cfg.autoStart, DEFAULT_CONFIG.autoStart)
+        return normalized
+    }
+
+    function toBoolean(val, fallback = false) {
+        if (typeof val === 'boolean') return val
+        if (typeof val === 'number') return val !== 0
+        if (typeof val === 'string') {
+            const normalized = val.trim().toLowerCase()
+            if (['true', '1', 'yes', 'on'].includes(normalized)) return true
+            if (['false', '0', 'no', 'off', ''].includes(normalized)) return false
+        }
+        return Boolean(fallback)
+    }
+
     // ── DOM 工具 ────────────────────────────────────────────────────────
     function getElem(sel) { return document.querySelector(sel) }
     function getElemSafe(sel, name) {
         const el = getElem(sel)
         if (!el) console.warn(`ReadBoost: 未找到元素 ${sel} (${name})`)
         return el
+    }
+
+    function parseTopicId() {
+        const match = window.location.pathname.match(/^\/t\/(?:[^/]+\/)?(\d+)(?:\/|$)/)
+        return match ? match[1] : null
+    }
+
+    function parseTotalReplies() {
+        const timelineEl = getElem('div.timeline-replies')
+        if (!timelineEl) return 0
+        const text = timelineEl.textContent.trim()
+        const parts = text.split('/').map(s => parseInt(s.replace(/,/g, '').trim(), 10))
+        return parts.length >= 2 && !isNaN(parts[1]) ? parts[1] : 0
+    }
+
+    async function waitForElem(selector, timeout = 10000) {
+        const existing = getElem(selector)
+        if (existing) return existing
+
+        return new Promise(resolve => {
+            const timer = setTimeout(() => {
+                observer.disconnect()
+                resolve(null)
+            }, timeout)
+            const observer = new MutationObserver(() => {
+                const el = getElem(selector)
+                if (!el) return
+                clearTimeout(timer)
+                observer.disconnect()
+                resolve(el)
+            })
+            observer.observe(document.body, { childList: true, subtree: true })
+        })
     }
 
     // ── 注入暗色模式适配样式 ──────────────────────────────────────────────
@@ -121,7 +186,8 @@
             background: var(--secondary, #fff);
             color: var(--primary, #333);
             z-index: 1000;
-            min-width: 340px;
+            box-sizing: border-box;
+            width: min(380px, calc(100vw - 32px));
             box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             font-size: 14px;
             line-height: 1.6;
@@ -135,18 +201,38 @@
             background: var(--secondary, #fff);
             color: var(--primary, #333);
         }
-        .rb-modal .btn-row { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .rb-modal .btn-row { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
         .rb-modal .btn-row button { flex: 0 1 auto; }
+        .rb-controls {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex: 0 0 auto;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+        .rb-button-wrap {
+            display: inline-flex;
+            align-items: center;
+            flex: 0 0 auto;
+        }
+        .rb-button-wrap .btn { margin: 0; }
         .rb-status {
-            margin-left: 10px; margin-right: 10px;
+            display: inline-flex;
+            align-items: center;
+            margin: 0 2px;
             font-size: 13px; transition: color 0.3s;
+        }
+        @media (max-width: 700px) {
+            .rb-controls { margin-left: 4px; gap: 4px; }
+            .rb-status { display: none; }
         }
     `)
 
     // ── UI 构建 ─────────────────────────────────────────────────────────
     function createButton(label, id, extraClass = '') {
         const wrapper = document.createElement('span')
-        wrapper.className = 'auth-buttons'
+        wrapper.className = 'rb-button-wrap'
         const btn = document.createElement('button')
         btn.className = `btn btn-small ${extraClass}`
         btn.id = id
@@ -171,12 +257,22 @@
         if (el) { el.textContent = text; el.style.color = color }
     }
 
+    function removeStopButton() {
+        const stopEl = document.getElementById('rbStopBtn')
+        if (!stopEl) return
+        const wrapper = stopEl.closest('.rb-button-wrap')
+        if (wrapper) wrapper.remove()
+    }
+
     // ── 设置弹窗 ─────────────────────────────────────────────────────────
     function showSettings() {
         if (isRunning) {
             alert('脚本正在运行，请先停止后再修改设置。')
             return
         }
+
+        const existing = document.getElementById('rbSettings')
+        if (existing) existing.remove()
 
         const div = document.createElement('div')
         div.className = 'rb-modal'
@@ -188,7 +284,7 @@
         ).join('\n')
 
         div.innerHTML = `
-            <h3>LINUXDO ReadBoost 设置</h3>
+            <h3>${SCRIPT_NAME} 设置</h3>
             ${inputsHTML}
             <label><input type="checkbox" id="rb_autoStart" ${advancedChecked}> 自动运行</label>
             <div class="btn-row">
@@ -202,8 +298,14 @@
         document.body.appendChild(div)
 
         document.getElementById('rb_startBtn').addEventListener('click', () => {
+            currentTopicId = currentTopicId || parseTopicId()
+            currentTotalReplies = parseTotalReplies() || currentTotalReplies
+            if (!currentTopicId || currentTotalReplies <= 0) {
+                alert('未能识别当前帖子或回复数，无法开始。')
+                return
+            }
             div.remove()
-            readTopic(topicID, totalReplies)
+            readTopic(currentTopicId, currentTotalReplies)
         })
 
         document.getElementById('rb_saveBtn').addEventListener('click', () => {
@@ -213,7 +315,7 @@
                 el.value = config[key]
             })
             config.autoStart = document.getElementById('rb_autoStart').checked
-            saveConfig(config)
+            config = saveConfig(config)
             alert('设置已保存！如需自动运行请刷新页面。')
             div.remove()
         })
@@ -302,89 +404,92 @@
             const parent = statusEl.parentNode
             parent.insertBefore(stopBtn, statusEl.nextSibling)
         }
-        document.getElementById('rbStopBtn').addEventListener('click', () => {
+        const stopEl = document.getElementById('rbStopBtn')
+        if (stopEl) stopEl.addEventListener('click', () => {
             abortFlag = true
             updateStatus('正在停止...', 'red')
         })
 
-        const csrfEl = getElemSafe('meta[name=csrf-token]', 'CSRF meta')
-        if (!csrfEl) {
-            updateStatus('错误：未找到 CSRF token', 'red')
-            isRunning = false
-            return
-        }
-        const csrf = csrfEl.getAttribute('content')
-
-        console.log(`ReadBoost 开始: topic=${topicId}, 回复数=${totalReplies}`)
-        updateStatus(`开始阅读 (0/${totalReplies})`, '#555')
-
-        for (let i = 1; i <= totalReplies && !abortFlag;) {
-            const batchSize = getRandomInt(config.minReqSize, config.maxReqSize)
-            const endId = Math.min(i + batchSize - 1, totalReplies)
-            await sendBatch(i, endId, topicId, csrf)
-            updateStatus(`进度 ${Math.min(endId, totalReplies)}/${totalReplies}`, '#555')
-            i = endId + 1
-
-            // 最后一批之后不再延迟
-            if (i <= totalReplies && !abortFlag) {
-                await sleep(config.baseDelay + getRandomInt(0, config.randomDelayRange))
+        try {
+            const csrfEl = getElemSafe('meta[name=csrf-token]', 'CSRF meta')
+            if (!csrfEl) {
+                updateStatus('错误：未找到 CSRF token', 'red')
+                return
             }
-        }
+            const csrf = csrfEl.getAttribute('content')
 
-        isRunning = false
-        if (abortFlag) {
-            updateStatus('已手动停止', 'red')
-            console.log('ReadBoost 已手动停止')
-        } else {
-            updateStatus('全部完成 ✓', 'green')
-            console.log('ReadBoost 全部完成')
-        }
+            console.log(`ReadBoost 开始: topic=${topicId}, 回复数=${totalReplies}`)
+            updateStatus(`开始阅读 (0/${totalReplies})`, '#555')
 
-        // 移除停止按钮
-        const stopEl = document.getElementById('rbStopBtn')
-        if (stopEl) {
-            const wrapper = stopEl.closest('.auth-buttons')
-            if (wrapper) wrapper.remove()
+            let skippedCount = 0
+            for (let i = 1; i <= totalReplies && !abortFlag;) {
+                const batchSize = getRandomInt(config.minReqSize, config.maxReqSize)
+                const endId = Math.min(i + batchSize - 1, totalReplies)
+                const ok = await sendBatch(i, endId, topicId, csrf)
+                if (abortFlag) break
+                if (ok) {
+                    updateStatus(`进度 ${Math.min(endId, totalReplies)}/${totalReplies}`, '#555')
+                } else {
+                    skippedCount += endId - i + 1
+                }
+                i = endId + 1
+
+                // 最后一批之后不再延迟
+                if (i <= totalReplies && !abortFlag) {
+                    await sleep(config.baseDelay + getRandomInt(0, config.randomDelayRange))
+                }
+            }
+
+            if (abortFlag) {
+                updateStatus('已手动停止', 'red')
+                console.log('ReadBoost 已手动停止')
+            } else if (skippedCount > 0) {
+                updateStatus(`完成，跳过 ${skippedCount} 条`, 'orange')
+                console.warn(`ReadBoost 完成，但跳过 ${skippedCount} 条`)
+            } else {
+                updateStatus('全部完成 ✓', 'green')
+                console.log('ReadBoost 全部完成')
+            }
+        } finally {
+            isRunning = false
+            removeStopButton()
         }
     }
 
     // ── 初始化 ────────────────────────────────────────────────────────────
-    ready.then(() => {
-        const headerButtons = getElemSafe('.header-buttons', 'header-buttons')
+    ready.then(async () => {
+        const headerButtons = await waitForElem('.header-buttons')
         if (!headerButtons) {
             console.warn('ReadBoost: 未找到 .header-buttons，放弃加载')
             return
         }
 
         // 解析 topic ID 和回复数
-        const pathParts = window.location.pathname.split('/')
-        const topicID = pathParts[3]
-        if (!topicID || !/^\d+$/.test(topicID)) {
-            console.warn('ReadBoost: 无法解析 topic ID', pathParts)
+        currentTopicId = parseTopicId()
+        if (!currentTopicId) {
+            console.warn('ReadBoost: 无法解析 topic ID', window.location.pathname)
             return
         }
 
-        const timelineEl = getElemSafe('div.timeline-replies', 'timeline-replies')
-        let totalReplies = 0
-        if (timelineEl) {
-            const text = timelineEl.textContent.trim()
-            const parts = text.split('/').map(s => parseInt(s.trim(), 10))
-            if (parts.length >= 2 && !isNaN(parts[1])) totalReplies = parts[1]
-        }
+        await waitForElem('div.timeline-replies', 5000)
+        currentTotalReplies = parseTotalReplies()
 
-        console.log('ReadBoost 已加载', { topicID, totalReplies })
+        console.log('ReadBoost 已加载', { topicID: currentTopicId, totalReplies: currentTotalReplies })
 
         // 注入 UI
-        const statusLabel = createStatusLabel(totalReplies > 0 ? 'ReadBoost 待命中' : 'ReadBoost (无回复)')
+        const rbControls = document.createElement('span')
+        rbControls.className = 'rb-controls'
+        const statusLabel = createStatusLabel(currentTotalReplies > 0 ? 'ReadBoost 待命中' : 'ReadBoost (无回复)')
         const settingsBtn = createButton('设置', 'rbSettingsBtn', 'btn-icon-text')
 
-        headerButtons.appendChild(statusLabel)
-        headerButtons.appendChild(settingsBtn)
+        rbControls.appendChild(statusLabel)
+        rbControls.appendChild(settingsBtn)
+        headerButtons.appendChild(rbControls)
         settingsBtn.addEventListener('click', showSettings)
 
         // 自启动
-        if (config.autoStart && totalReplies > 0) {
-            setTimeout(() => readTopic(topicID, totalReplies), 500)
+        if (config.autoStart && currentTotalReplies > 0) {
+            setTimeout(() => readTopic(currentTopicId, currentTotalReplies), 500)
         }
     })
 })()
