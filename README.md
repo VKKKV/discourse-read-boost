@@ -11,7 +11,7 @@ This fork keeps the shipped file name `LINUXDO_ReadBoost.js` for compatibility, 
 - Manual start, auto start, and stop while running.
 - Configurable delay, batch size, and simulated reading time.
 - Same-origin requests to Discourse's `/topics/timings` endpoint.
-- Theme-aware settings modal for light and dark Discourse themes.
+- Tactical HUD settings modal with compact header telemetry.
 - Compact header controls to avoid overlapping Discourse buttons.
 
 ## Risk Notice

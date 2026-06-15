@@ -175,33 +175,175 @@
         })
     }
 
-    // ── 注入暗色模式适配样式 ──────────────────────────────────────────────
+    // ── 注入 Tactical HUD 样式 ────────────────────────────────────────────
     GM_addStyle(`
+        .rb-controls,
         .rb-modal {
-            position: fixed; top: 50%; left: 50%;
+            --rb-hud-bg: #000;
+            --rb-hud-fg: #0f0;
+            --rb-hud-fg-dim: rgba(0, 255, 0, 0.48);
+            --rb-hud-fg-muted: rgba(0, 255, 0, 0.68);
+            --rb-hud-fg-bright: #fff;
+            --rb-hud-border: rgba(0, 255, 0, 0.14);
+            --rb-hud-border-strong: rgba(0, 255, 0, 0.32);
+            --rb-hud-card-bg: rgba(0, 255, 0, 0.04);
+            --rb-hud-warn: #ffb000;
+            --rb-hud-error: #ff3b3b;
+            --rb-hud-font: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-family: var(--rb-hud-font);
+            font-variant-numeric: tabular-nums;
+        }
+        .rb-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
-            padding: 24px 28px;
-            border: 1px solid var(--primary-low, #ccc);
-            border-radius: 12px;
-            background: var(--secondary, #fff);
-            color: var(--primary, #333);
-            z-index: 1000;
+            isolation: isolate;
+            overflow: hidden;
+            padding: 22px 24px;
+            border: 1px solid var(--rb-hud-border-strong);
+            border-top-color: rgba(0, 255, 0, 0.55);
+            border-radius: 0;
+            background:
+                linear-gradient(90deg, rgba(0, 255, 0, 0.16), transparent 34%, rgba(0, 255, 0, 0.08) 68%, transparent),
+                linear-gradient(rgba(0, 255, 0, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 0, 0.035) 1px, transparent 1px),
+                var(--rb-hud-bg);
+            background-size: 100% 3px, 40px 40px, 40px 40px, auto;
+            color: var(--rb-hud-fg);
+            z-index: 10000;
             box-sizing: border-box;
-            width: min(380px, calc(100vw - 32px));
-            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            width: min(420px, calc(100vw - 32px));
+            box-shadow: 0 0 0 1px rgba(0, 255, 0, 0.06), 0 0 24px rgba(0, 255, 0, 0.2), 0 22px 54px rgba(0, 0, 0, 0.5);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .rb-modal::before {
+            content: "";
+            position: absolute;
+            inset: -40% 0 100%;
+            z-index: 0;
+            pointer-events: none;
+            background: linear-gradient(180deg, transparent, rgba(0, 255, 0, 0.18), transparent);
+            animation: rb-hud-scan 4.8s linear infinite;
+        }
+        .rb-modal::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: repeating-linear-gradient(180deg, transparent 0 3px, rgba(0, 255, 0, 0.045) 3px 4px);
+            opacity: 0.65;
+        }
+        .rb-modal > * {
+            position: relative;
+            z-index: 1;
+        }
+        .rb-modal h3 {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 16px;
+            margin: 0 0 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--rb-hud-border);
+            color: var(--rb-hud-fg-bright);
             font-size: 14px;
-            line-height: 1.6;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            line-height: 1.2;
+            text-transform: uppercase;
         }
-        .rb-modal h3 { margin: 0 0 12px 0; font-size: 16px; }
-        .rb-modal label { display: block; margin: 4px 0; }
+        .rb-modal .rb-kicker {
+            color: var(--rb-hud-fg-dim);
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+        }
+        .rb-modal .rb-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .rb-modal .rb-stat {
+            padding: 9px 10px;
+            border: 1px solid var(--rb-hud-border);
+            background: var(--rb-hud-card-bg);
+        }
+        .rb-modal .rb-stat span {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--rb-hud-fg-dim);
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+        .rb-modal .rb-stat strong {
+            color: var(--rb-hud-fg);
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1;
+            text-shadow: 0 0 14px rgba(0, 255, 0, 0.38);
+        }
+        .rb-modal .rb-fields {
+            display: grid;
+            gap: 7px;
+        }
+        .rb-modal label {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 112px;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            color: var(--rb-hud-fg-muted);
+            font-size: 11px;
+            letter-spacing: 0.04em;
+        }
+        .rb-modal label > span {
+            min-width: 0;
+        }
         .rb-modal input[type="number"] {
-            width: 100px; padding: 2px 6px;
-            border: 1px solid var(--primary-low, #ccc);
-            border-radius: 4px;
-            background: var(--secondary, #fff);
-            color: var(--primary, #333);
+            width: 100%;
+            min-height: 28px;
+            box-sizing: border-box;
+            padding: 3px 7px;
+            border: 1px solid var(--rb-hud-border-strong);
+            border-radius: 0;
+            outline: none;
+            background: rgba(0, 0, 0, 0.72);
+            color: var(--rb-hud-fg-bright);
+            font-family: var(--rb-hud-font);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
         }
-        .rb-modal .btn-row { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .rb-modal input[type="number"]:focus {
+            border-color: var(--rb-hud-fg);
+            box-shadow: 0 0 0 1px rgba(0, 255, 0, 0.18), 0 0 12px rgba(0, 255, 0, 0.25);
+        }
+        .rb-modal .rb-checkbox {
+            grid-template-columns: 16px minmax(0, 1fr);
+            justify-content: start;
+            margin-top: 4px;
+            padding-top: 8px;
+            border-top: 1px solid var(--rb-hud-border);
+            text-transform: uppercase;
+        }
+        .rb-modal input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            margin: 0;
+            accent-color: #0f0;
+        }
+        .rb-modal .btn-row {
+            margin-top: 16px;
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
         .rb-modal .btn-row button { flex: 0 1 auto; }
         .rb-controls {
             display: inline-flex;
@@ -209,6 +351,14 @@
             gap: 6px;
             flex: 0 0 auto;
             margin-left: 8px;
+            padding: 3px 4px 3px 8px;
+            border: 1px solid var(--rb-hud-border);
+            border-top-color: var(--rb-hud-border-strong);
+            background:
+                linear-gradient(rgba(0, 255, 0, 0.05) 50%, transparent 50%),
+                rgba(0, 0, 0, 0.9);
+            background-size: 100% 4px, auto;
+            color: var(--rb-hud-fg);
             white-space: nowrap;
         }
         .rb-button-wrap {
@@ -216,16 +366,78 @@
             align-items: center;
             flex: 0 0 auto;
         }
-        .rb-button-wrap .btn { margin: 0; }
+        .rb-button-wrap .btn,
+        .rb-modal .btn-row .btn {
+            min-height: 28px;
+            margin: 0;
+            padding: 4px 9px;
+            border: 1px solid var(--rb-hud-border-strong);
+            border-radius: 0;
+            background: rgba(0, 255, 0, 0.035);
+            color: var(--rb-hud-fg);
+            font-family: var(--rb-hud-font);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            line-height: 1;
+            text-transform: uppercase;
+            transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, text-shadow 0.12s ease;
+        }
+        .rb-button-wrap .btn:hover,
+        .rb-button-wrap .btn:focus,
+        .rb-modal .btn-row .btn:hover,
+        .rb-modal .btn-row .btn:focus {
+            border-color: var(--rb-hud-fg);
+            background: rgba(0, 255, 0, 0.12);
+            color: var(--rb-hud-fg-bright);
+            text-shadow: 0 0 12px rgba(0, 255, 0, 0.65);
+        }
+        .rb-button-wrap .btn.btn-danger,
+        .rb-modal .btn-row .btn.rb-action-danger {
+            border-color: rgba(255, 59, 59, 0.5);
+            color: var(--rb-hud-error);
+        }
+        .rb-modal .btn-row .btn.rb-action-primary {
+            border-color: rgba(0, 255, 0, 0.56);
+            background: rgba(0, 255, 0, 0.1);
+        }
+        .rb-modal .btn-row .btn.rb-action-muted {
+            color: var(--rb-hud-fg-muted);
+        }
         .rb-status {
             display: inline-flex;
             align-items: center;
-            margin: 0 2px;
-            font-size: 13px; transition: color 0.3s;
+            margin: 0 2px 0 0;
+            color: var(--rb-hud-fg-muted);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            line-height: 1;
+            text-transform: uppercase;
+            transition: color 0.16s ease, text-shadow 0.16s ease;
+        }
+        .rb-status::before {
+            content: ">";
+            margin-right: 5px;
+            color: var(--rb-hud-fg-dim);
+        }
+        .rb-status-ok {
+            color: var(--rb-hud-fg);
+            text-shadow: 0 0 12px rgba(0, 255, 0, 0.48);
+        }
+        .rb-status-warn { color: var(--rb-hud-warn); }
+        .rb-status-error { color: var(--rb-hud-error); }
+        @keyframes rb-hud-scan {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(360%); }
         }
         @media (max-width: 700px) {
-            .rb-controls { margin-left: 4px; gap: 4px; }
+            .rb-controls { margin-left: 4px; gap: 4px; padding: 2px; }
             .rb-status { display: none; }
+            .rb-modal { padding: 18px; }
+            .rb-modal h3 { align-items: flex-start; flex-direction: column; gap: 5px; }
+            .rb-modal label { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+            .rb-modal .rb-checkbox { grid-template-columns: 16px minmax(0, 1fr); }
         }
     `)
 
@@ -236,6 +448,7 @@
         const btn = document.createElement('button')
         btn.className = `btn btn-small ${extraClass}`
         btn.id = id
+        btn.type = 'button'
         const span = document.createElement('span')
         span.className = 'd-button-label'
         span.textContent = label
@@ -246,7 +459,7 @@
 
     function createStatusLabel(text) {
         const el = document.createElement('span')
-        el.className = 'rb-status'
+        el.className = 'rb-status rb-status-idle'
         el.id = 'rbStatus'
         el.textContent = text
         return el
@@ -254,7 +467,18 @@
 
     function updateStatus(text, color = '#555') {
         const el = document.getElementById('rbStatus')
-        if (el) { el.textContent = text; el.style.color = color }
+        if (!el) return
+        const normalized = String(color).toLowerCase()
+        const state = normalized === 'green' || normalized === '#0f0'
+            ? 'ok'
+            : normalized === 'orange'
+                ? 'warn'
+                : normalized === 'red'
+                    ? 'error'
+                    : 'idle'
+        el.textContent = text
+        el.classList.remove('rb-status-idle', 'rb-status-ok', 'rb-status-warn', 'rb-status-error')
+        el.classList.add(`rb-status-${state}`)
     }
 
     function removeStopButton() {
@@ -280,18 +504,24 @@
 
         const advancedChecked = config.autoStart ? 'checked' : ''
         const inputsHTML = CONFIG_META.map(({ key, label }) =>
-            `<label>${label}: <input id="rb_${key}" type="number" value="${config[key]}"></label>`
+            `<label><span>${label}</span><input id="rb_${key}" type="number" value="${config[key]}"></label>`
         ).join('\n')
 
         div.innerHTML = `
-            <h3>${SCRIPT_NAME} 设置</h3>
-            ${inputsHTML}
-            <label><input type="checkbox" id="rb_autoStart" ${advancedChecked}> 自动运行</label>
+            <h3><span>${SCRIPT_NAME}</span><span class="rb-kicker">HUD CONFIG</span></h3>
+            <div class="rb-metrics">
+                <div class="rb-stat"><span>topic</span><strong>${currentTopicId || '--'}</strong></div>
+                <div class="rb-stat"><span>replies</span><strong>${currentTotalReplies || 0}</strong></div>
+            </div>
+            <div class="rb-fields">
+                ${inputsHTML}
+                <label class="rb-checkbox"><input type="checkbox" id="rb_autoStart" ${advancedChecked}><span>自动运行</span></label>
+            </div>
             <div class="btn-row">
-                <button class="btn btn-small" id="rb_startBtn"><span class="d-button-label">手动开始</span></button>
-                <button class="btn btn-small" id="rb_saveBtn"><span class="d-button-label">保存</span></button>
-                <button class="btn btn-small" id="rb_resetBtn"><span class="d-button-label">恢复默认</span></button>
-                <button class="btn btn-small" id="rb_closeBtn"><span class="d-button-label">关闭</span></button>
+                <button class="btn btn-small rb-action-primary" id="rb_startBtn" type="button"><span class="d-button-label">手动开始</span></button>
+                <button class="btn btn-small rb-action-primary" id="rb_saveBtn" type="button"><span class="d-button-label">保存</span></button>
+                <button class="btn btn-small rb-action-muted" id="rb_resetBtn" type="button"><span class="d-button-label">恢复默认</span></button>
+                <button class="btn btn-small rb-action-muted" id="rb_closeBtn" type="button"><span class="d-button-label">关闭</span></button>
             </div>
         `
 
