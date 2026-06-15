@@ -4,7 +4,7 @@
 
 Discourse Read Boost is a Tampermonkey / Violentmonkey userscript for Discourse topic pages. It submits configurable reading-time batches to help fill topic read progress.
 
-This fork keeps the shipped file name `LINUXDO_ReadBoost.js` for compatibility, while the userscript display name is `Discourse Read Boost`.
+The shipped userscript is `discourse-read-boost.user.js`, using the standard `.user.js` filename expected by Tampermonkey and Violentmonkey.
 
 ## Features
 
@@ -23,7 +23,7 @@ This script does not try to bypass forum detection mechanisms and does not guara
 ## Install
 
 1. Install Tampermonkey or Violentmonkey.
-2. Install `LINUXDO_ReadBoost.js` directly from this repository.
+2. Install `discourse-read-boost.user.js` from `https://raw.githubusercontent.com/VKKKV/discourse-read-boost/main/discourse-read-boost.user.js`.
 3. Open a supported Discourse topic page.
 4. On first run, read the warning and type `明白` to continue.
 5. Use the `ReadBoost` status and `设置` button in the page header.
@@ -40,7 +40,7 @@ The userscript currently matches topic pages on:
 - `idcflare.com`
 - `meta.discourse.org`
 
-To support another Discourse forum, add a matching `@match` line at the top of `LINUXDO_ReadBoost.js`.
+To support another Discourse forum, add a matching `@match` line at the top of `discourse-read-boost.user.js`.
 
 ## Settings
 
@@ -64,12 +64,12 @@ Keep the defaults unless you have a specific reason to change them. If you need 
 
 ## Development
 
-This repository has no package manager, build step, linter, or test suite. Edit `LINUXDO_ReadBoost.js` directly.
+This repository has no package manager, build step, linter, or test suite. Edit `discourse-read-boost.user.js` directly.
 
 Run the available syntax check after changes:
 
 ```bash
-node --check LINUXDO_ReadBoost.js
+node --check discourse-read-boost.user.js
 ```
 
 Runtime behavior must be verified manually in a userscript manager on a supported Discourse topic page.
@@ -78,9 +78,9 @@ The `scripts/` directory contains release helpers. It is not required for normal
 
 ## Notes
 
-- This fork uses `Discourse Read Boost` as the userscript display name.
-- The file name remains `LINUXDO_ReadBoost.js` to avoid breaking existing update URLs and installed userscripts.
-- The current UI fixes focus on keeping ReadBoost controls from overlapping Discourse header buttons.
+- `Discourse Read Boost` is now published as a standalone userscript under `discourse-read-boost.user.js`.
+- Existing installs from the previous URL should install the new `.user.js` file manually once.
+- The current UI focuses on keeping ReadBoost controls from overlapping Discourse header buttons.
 
 ## License
 

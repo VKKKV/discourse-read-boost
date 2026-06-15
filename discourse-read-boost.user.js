@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Discourse Read Boost
-// @namespace    discourse-read-boost
-// @version      1.4
-// @author       Do
+// @namespace    https://github.com/VKKKV/discourse-read-boost
+// @version      1.5
+// @author       VKKKV
 // @description  自动化刷取 Discourse 论坛已读帖量，温和、可配置，支持多个 Discourse 论坛
 // @license      GPL-3.0
 // @icon         https://www.google.com/s2/favicons?domain=linux.do
@@ -16,8 +16,8 @@
 // @grant        GM_deleteValue
 // @grant        GM_listValues
 // @grant        GM_addStyle
-// @updateURL    https://raw.githubusercontent.com/VKKKV/discourse-read-boost/main/LINUXDO_ReadBoost.js
-// @downloadURL  https://raw.githubusercontent.com/VKKKV/discourse-read-boost/main/LINUXDO_ReadBoost.js
+// @updateURL    https://raw.githubusercontent.com/VKKKV/discourse-read-boost/main/discourse-read-boost.user.js
+// @downloadURL  https://raw.githubusercontent.com/VKKKV/discourse-read-boost/main/discourse-read-boost.user.js
 // ==/UserScript==
 
 (function () {
